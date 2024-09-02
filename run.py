@@ -101,11 +101,11 @@ def select_image():
     image_entry.insert(0, file_path)
 
 def show_about():
-    messagebox.showinfo("About", "Support Message Sender v0.4\n Created by S. Volkan Sah")
+    messagebox.showinfo("About", "Social Media Post Tool v0.4\n Created by S. Volkan Sah")
 
 # GUI Setup
 root = tk.Tk()
-root.title("Support Message Sender")
+root.title("Social Media Post Tool v0.4")
 
 # Menu
 menu_bar = tk.Menu(root)
