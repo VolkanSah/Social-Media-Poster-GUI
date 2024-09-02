@@ -1,5 +1,6 @@
 
 # Social Media Post Tool v0.4
+![Social Medai Post Tool](social_cover.jpg)
 
 ## Overview
 Tired of manually posting to multiple social networks every time there's an important update? This tool is designed to simplify that process. With this lightweight application, you can post messages simultaneously to Twitter (X), Facebook, and Instagram directly from your desktop, without needing to load up each platform individually.
