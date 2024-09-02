@@ -15,6 +15,7 @@ Managing multiple social media accounts can be a hassle, especially during criti
 - **Lightweight and Simple**: No unnecessary bloat—just the features you need.
 
 ### Installation
+You need tweepy, requests
 1. Clone the repository:
    ```
    git clone https://github.com/yourusername/social-media-post-tool.git
