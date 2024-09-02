@@ -1,15 +1,40 @@
-import tkinter as tk
-from tkinter import filedialog, messagebox
-from tkinter import ttk
+import tkinter as tk # 
+from tkinter import filedialog, messagebox # 
+from tkinter import ttk # 
 
+import tweepy # 
+
+# twitter post logic
 def post_to_twitter(api_key, api_key_secret, access_token, access_token_secret, message, image_path=None):
-    # Placeholder for Twitter post logic
-    log_text.insert(tk.END, "Posted to Twitter\n")
+    try:
+        # Authenticate
+        auth = tweepy.OAuthHandler(api_key, api_key_secret)
+        auth.set_access_token(access_token, access_token_secret)
+        api = tweepy.API(auth)
 
+        # Post tweet
+        if image_path:
+            media = api.media_upload(image_path)
+            tweet = api.update_status(status=message, media_ids=[media.media_id])
+        else:
+            tweet = api.update_status(status=message)
+
+        log_text.insert(tk.END, f"Posted to Twitter: {tweet.id}\n")
+        return True
+    except Exception as e:
+        log_text.insert(tk.END, f"Error posting to Twitter: {str(e)}\n")
+        return False
+# tfacebook post logic
 def post_to_facebook(access_token, message, image_path=None):
     # Placeholder for Facebook post logic
     log_text.insert(tk.END, "Posted to Facebook\n")
+# instagram post logic
+# def post_to_instagram(access_token, message, image_path=None):
+    # Placeholder for Instagram post logic
+   #  log_text.insert(tk.END, "Posted to Facebook\n")
+#
 
+# send message
 def send_message():
     message = message_entry.get("1.0", tk.END).strip()
     image_path = image_entry.get()
