@@ -1,5 +1,6 @@
 # Social Media Post Tool v0.4
-# Updates: 
+# GPL-3.0 license 
+# Updates: https://github.com/VolkanSah/Social-Media-Post-Tool
 import tkinter as tk
 from tkinter import filedialog, messagebox
 from tkinter import ttk
