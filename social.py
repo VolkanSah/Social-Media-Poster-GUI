@@ -1,3 +1,6 @@
+import tweepy
+import facebook
+from instabot import Bot
 from PySide6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QTextEdit, QPushButton, QFileDialog, QLineEdit, QCheckBox, QLabel, QTabWidget
@@ -59,18 +62,25 @@ def post_to_instagram(username, password, message, image_path):
         return f"Fehler beim Posten auf Instagram: {str(e)}"
 
 def send_message():
-    message = message_entry.toPlainText().strip()
-    image_path = image_entry.text()
+    message = self.message_entry.toPlainText().strip()
+    image_path = self.image_entry.text()
 
     if len(message) > 280:
-        # Display an error message
+        self.log_text.append("Fehler: Nachricht zu lang für Twitter (max 280 Zeichen)")
         return
 
-    if twitter_var.isChecked():
-        post_to_twitter(twitter_api_key, twitter_api_key_secret, twitter_access_token, twitter_access_token_secret, message, image_path)
-    if facebook_var.isChecked():
-        post_to_facebook(facebook_access_token, message, image_path)
+    if self.twitter_var.isChecked():
+        result = post_to_twitter(twitter_api_key, twitter_api_key_secret, twitter_access_token, twitter_access_token_secret, message, image_path)
+        self.log_text.append(result)
 
+    if self.facebook_var.isChecked():
+        result = post_to_facebook(facebook_access_token, message, image_path)
+        self.log_text.append(result)
+
+    if self.instagram_var.isChecked():
+        result = post_to_instagram(instagram_username, instagram_password, message, image_path)
+        self.log_text.append(result)
+        
 def select_image():
     file_path, _ = QFileDialog.getOpenFileName()
     if file_path:
