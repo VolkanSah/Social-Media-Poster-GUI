@@ -4,15 +4,59 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtGui import QAction, QIcon
 import sys
+    # Twitter post logic
 
 # Funktionen unverändert übernommen
 def post_to_twitter(api_key, api_key_secret, access_token, access_token_secret, message, image_path=None):
-    # Placeholder for Twitter post logic
-    log_text.append("Posted to Twitter\n")
+    # Authentifizierung mit Twitter API
+    auth = tweepy.OAuthHandler(api_key, api_key_secret)
+    auth.set_access_token(access_token, access_token_secret)
+    api = tweepy.API(auth)
+
+    try:
+        if image_path:
+            # Post mit Bild
+            media = api.media_upload(image_path)
+            api.update_status(status=message, media_ids=[media.media_id])
+        else:
+            # Post ohne Bild
+            api.update_status(status=message)
+        return "Erfolgreich auf Twitter gepostet"
+    except Exception as e:
+        return f"Fehler beim Posten auf Twitter: {str(e)}"
+        
+    # log_text.append("Posted to Twitter\n")
+    # Facebook post logic
 
 def post_to_facebook(access_token, message, image_path=None):
-    # Placeholder for Facebook post logic
-    log_text.append("Posted to Facebook\n")
+    graph = facebook.GraphAPI(access_token)
+    try:
+        if image_path:
+            # Post mit Bild
+            with open(image_path, "rb") as image:
+                graph.put_photo(image=image, message=message)
+        else:
+            # Post ohne Bild
+            graph.put_object("me", "feed", message=message)
+        return "Erfolgreich auf Facebook gepostet"
+    except facebook.GraphAPIError as e:
+        return f"Fehler beim Posten auf Facebook: {str(e)}"
+    # log_text.append("Posted to Facebook\n")
+    # Instagram post logic
+
+def post_to_instagram(username, password, message, image_path):
+    from instabot import Bot
+    bot = Bot()
+    try:
+        bot.login(username=username, password=password)
+        if image_path:
+            # Instagram erfordert ein Bild für Posts
+            bot.upload_photo(image_path, caption=message)
+            return "Erfolgreich auf Instagram gepostet"
+        else:
+            return "Fehler: Instagram erfordert ein Bild für Posts"
+    except Exception as e:
+        return f"Fehler beim Posten auf Instagram: {str(e)}"
 
 def send_message():
     message = message_entry.toPlainText().strip()
