@@ -1,180 +1,194 @@
-# Social Media Post Tool v0.4
-# GPL-3.0 license 
-# Updates: https://github.com/VolkanSah/Social-Media-Post-Tool
-import tkinter as tk
-from tkinter import filedialog, messagebox
-from tkinter import ttk
 import tweepy
-import requests
+import facebook
+from PySide6.QtWidgets import (
+    QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
+    QTextEdit, QPushButton, QFileDialog, QLineEdit, QCheckBox, QLabel, QTabWidget
+)
+from PySide6.QtGui import QAction, QIcon
+import sys
 
-# Twitter post logic
+# Funktionen für Social Media Posts
 def post_to_twitter(api_key, api_key_secret, access_token, access_token_secret, message, image_path=None):
     try:
-        # Authenticate
+        # Authentifizierung mit Twitter API
         auth = tweepy.OAuthHandler(api_key, api_key_secret)
         auth.set_access_token(access_token, access_token_secret)
         api = tweepy.API(auth)
 
-        # Post tweet
         if image_path:
+            # Post mit Bild
             media = api.media_upload(image_path)
-            tweet = api.update_status(status=message, media_ids=[media.media_id])
+            api.update_status(status=message, media_ids=[media.media_id])
         else:
-            tweet = api.update_status(status=message)
-
-        log_text.insert(tk.END, f"Posted to Twitter: {tweet.id}\n")
-        return True
+            # Post ohne Bild
+            api.update_status(status=message)
+        return "Erfolgreich auf Twitter gepostet"
     except Exception as e:
-        log_text.insert(tk.END, f"Error posting to Twitter: {str(e)}\n")
-        return False
+        return f"Fehler beim Posten auf Twitter: {str(e)}"
 
-# Facebook post logic
-def post_to_facebook(page_access_token, page_id, message, image_path=None):
+def post_to_facebook(access_token, page_id, message, image_path=None):
     try:
-        url = f"https://graph.facebook.com/v16.0/{page_id}/photos" if image_path else f"https://graph.facebook.com/v16.0/{page_id}/feed"
-        data = {
-            "access_token": page_access_token,
-            "message": message,
-        }
+        graph = facebook.GraphAPI(access_token)
         if image_path:
-            with open(image_path, 'rb') as image:
-                files = {"source": image}
-                response = requests.post(url, data=data, files=files)
+            with open(image_path, "rb") as image:
+                # Post mit Bild auf der Seite
+                graph.put_photo(image=image, album_path=f"{page_id}/photos", message=message)
         else:
-            response = requests.post(url, data=data)
+            # Post ohne Bild auf der Seite
+            graph.put_object(parent_object=f"{page_id}", connection_name="feed", message=message)
+        return "Erfolgreich auf der Facebook-Seite gepostet"
+    except facebook.GraphAPIError as e:
+        return f"Fehler beim Posten auf der Facebook-Seite: {str(e)}"
 
-        response.raise_for_status()
-        log_text.insert(tk.END, f"Posted to Facebook: {response.json()['id']}\n")
-        return True
-    except Exception as e:
-        log_text.insert(tk.END, f"Error posting to Facebook: {str(e)}\n")
-        return False
-
-# Instagram post logic
-def post_to_instagram(user_id, access_token, message, image_path):
+def post_to_instagram(username, password, message, image_path):
+    from instabot import Bot
+    bot = Bot()
     try:
-        # Step 1: Upload the image
-        image_url = f"https://graph.facebook.com/v16.0/{user_id}/media"
-        image_payload = {
-            "image_url": image_path,
-            "access_token": access_token,
-            "caption": message
-        }
-        image_response = requests.post(image_url, data=image_payload)
-        image_response.raise_for_status()
-        media_id = image_response.json()["id"]
-
-        # Step 2: Publish the image
-        publish_url = f"https://graph.facebook.com/v16.0/{user_id}/media_publish"
-        publish_payload = {
-            "creation_id": media_id,
-            "access_token": access_token
-        }
-        publish_response = requests.post(publish_url, data=publish_payload)
-        publish_response.raise_for_status()
-
-        log_text.insert(tk.END, f"Posted to Instagram: {publish_response.json()['id']}\n")
-        return True
+        bot.login(username=username, password=password)
+        if image_path:
+            # Instagram erfordert ein Bild für Posts
+            bot.upload_photo(image_path, caption=message)
+            return "Erfolgreich auf Instagram gepostet"
+        else:
+            return "Fehler: Instagram erfordert ein Bild für Posts"
     except Exception as e:
-        log_text.insert(tk.END, f"Error posting to Instagram: {str(e)}\n")
-        return False
+        return f"Fehler beim Posten auf Instagram: {str(e)}"
 
-# Send message
-def send_message():
-    message = message_entry.get("1.0", tk.END).strip()
-    image_path = image_entry.get()
+# GUI-Design mit PySide6
+class MainWindow(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("Social Network Poster")
 
-    if len(message) > 280:
-        messagebox.showerror("Error", "Message is too long for Twitter. Please shorten it.")
-        return
+        # Menüleiste
+        menu_bar = self.menuBar()
+        file_menu = menu_bar.addMenu("File")
+        about_action = QAction("About", self)
+        about_action.triggered.connect(show_about)
+        file_menu.addAction(about_action)
+        file_menu.addSeparator()
+        exit_action = QAction("Exit", self)
+        exit_action.triggered.connect(self.close)
+        file_menu.addAction(exit_action)
 
-    if twitter_var.get():
-        post_to_twitter(twitter_api_key, twitter_api_key_secret, twitter_access_token, twitter_access_token_secret, message, image_path)
-    if facebook_var.get():
-        post_to_facebook(facebook_page_access_token, facebook_page_id, message, image_path)
-    if instagram_var.get():
-        post_to_instagram(instagram_user_id, instagram_access_token, message, image_path)
+        # Hauptlayout
+        main_layout = QHBoxLayout()
 
-def select_image():
-    file_path = filedialog.askopenfilename()
-    image_entry.delete(0, tk.END)
-    image_entry.insert(0, file_path)
+        # Linkes Widget für Netzwerkeinstellungen
+        left_widget = QWidget()
+        left_layout = QVBoxLayout()
+        left_widget.setLayout(left_layout)
+
+        left_layout.addWidget(QLabel("Netzwerke:"))
+
+        self.twitter_var = QCheckBox("Twitter")
+        self.facebook_var = QCheckBox("Facebook")
+        self.instagram_var = QCheckBox("Instagram")  # Placeholder for future Instagram integration
+        left_layout.addWidget(self.twitter_var)
+        left_layout.addWidget(self.facebook_var)
+        left_layout.addWidget(self.instagram_var)
+
+        # Neues Eingabefeld für Seiten-ID
+        self.page_id_entry = QLineEdit()
+        self.page_id_entry.setPlaceholderText("Seiten-ID (für Facebook)")
+        left_layout.addWidget(self.page_id_entry)
+
+        main_layout.addWidget(left_widget)
+
+        # Rechtes Widget für Nachrichteneingabe und Bildauswahl
+        right_widget = QWidget()
+        right_layout = QVBoxLayout()
+        right_widget.setLayout(right_layout)
+
+        self.message_entry = QTextEdit()
+        self.message_entry.setPlaceholderText("Enter your message here...")
+        right_layout.addWidget(self.message_entry)
+
+        self.image_entry = QLineEdit()
+        image_button = QPushButton("Browse")
+        image_button.clicked.connect(self.select_image)
+
+        image_layout = QHBoxLayout()
+        image_layout.addWidget(self.image_entry)
+        image_layout.addWidget(image_button)
+
+        right_layout.addLayout(image_layout)
+
+        send_button = QPushButton("Send Message")
+        send_button.clicked.connect(self.send_message)
+        right_layout.addWidget(send_button)
+
+        main_layout.addWidget(right_widget)
+
+        # Hauptwidget setzen
+        main_widget = QWidget()
+        main_widget.setLayout(main_layout)
+        self.setCentralWidget(main_widget)
+
+        # Log-Tab
+        self.log_text = QTextEdit()
+        self.log_text.setReadOnly(True)
+
+        tab_widget = QTabWidget()
+        tab_widget.addTab(main_widget, "Main")
+        tab_widget.addTab(self.log_text, "Logs")
+        self.setCentralWidget(tab_widget)
+
+    def send_message(self):
+        message = self.message_entry.toPlainText().strip()
+        image_path = self.image_entry.text()
+
+        if not message:
+            self.log_text.append("Fehler: Nachricht ist leer.")
+            return
+
+        if len(message) > 280:
+            self.log_text.append("Fehler: Nachricht zu lang für Twitter (max 280 Zeichen)")
+            return
+
+        if self.twitter_var.isChecked():
+            if not twitter_api_key or not twitter_api_key_secret or not twitter_access_token or not twitter_access_token_secret:
+                self.log_text.append("Fehler: Twitter-API-Schlüssel fehlen.")
+            else:
+                result = post_to_twitter(twitter_api_key, twitter_api_key_secret, twitter_access_token, twitter_access_token_secret, message, image_path)
+                self.log_text.append(result)
+
+        if self.facebook_var.isChecked():
+            page_id = self.page_id_entry.text().strip()
+            if not facebook_access_token:
+                self.log_text.append("Fehler: Facebook-Zugangstoken fehlt.")
+            elif not page_id:
+                self.log_text.append("Fehler: Seiten-ID für Facebook fehlt.")
+            else:
+                result = post_to_facebook(facebook_access_token, page_id, message, image_path)
+                self.log_text.append(result)
+
+        if self.instagram_var.isChecked():
+            if not instagram_username or not instagram_password:
+                self.log_text.append("Fehler: Instagram-Zugangsdaten fehlen.")
+            else:
+                result = post_to_instagram(instagram_username, instagram_password, message, image_path)
+                self.log_text.append(result)
+
+    def select_image(self):
+        file_path, _ = QFileDialog.getOpenFileName()
+        if file_path:
+            self.image_entry.setText(file_path)
 
 def show_about():
-    messagebox.showinfo("About", "Social Media Post Tool v0.4\n Created by S. Volkan Sah")
+    # Display an about message
+    pass
 
-# GUI Setup
-root = tk.Tk()
-root.title("Social Media Post Tool v0.4")
-
-# Menu
-menu_bar = tk.Menu(root)
-root.config(menu=menu_bar)
-
-# About and Exit Menu
-file_menu = tk.Menu(menu_bar, tearoff=0)
-menu_bar.add_cascade(label="File", menu=file_menu)
-file_menu.add_command(label="About", command=show_about)
-file_menu.add_separator()
-file_menu.add_command(label="Exit", command=root.quit)
-
-# Tabs
-notebook = ttk.Notebook(root)
-notebook.pack(expand=True, fill="both")
-
-# Main Tab
-main_frame = tk.Frame(notebook)
-notebook.add(main_frame, text="Main")
-
-# Message Entry (expands with window)
-message_entry = tk.Text(main_frame, height=10, wrap="word")
-message_entry.pack(expand=True, fill="both", padx=10, pady=10)
-
-# Image Selection Row
-image_frame = tk.Frame(main_frame)
-image_frame.pack(fill="x", padx=10, pady=5)
-
-image_entry = tk.Entry(image_frame, width=50)
-image_entry.pack(side="left", expand=True, fill="x", padx=5)
-
-# Styled Browse Button
-image_button = tk.Button(image_frame, text="Browse", command=select_image, bg="#383b4f", fg="white", font=("Helvetica", 12, "bold"), activebackground="#0056b3", activeforeground="white", borderwidth=0, padx=10, pady=5)
-image_button.pack(side="left")
-
-# Network Selection Row
-network_frame = tk.Frame(main_frame)
-network_frame.pack(anchor="w", padx=10, pady=10)
-
-twitter_var = tk.BooleanVar()
-facebook_var = tk.BooleanVar()
-instagram_var = tk.BooleanVar()
-
-tk.Checkbutton(network_frame, text="Twitter", variable=twitter_var).pack(side="left", padx=5)
-tk.Checkbutton(network_frame, text="Facebook", variable=facebook_var).pack(side="left", padx=5)
-tk.Checkbutton(network_frame, text="Instagram", variable=instagram_var).pack(side="left", padx=5)
-
-# Styled Send Button
-send_button = tk.Button(main_frame, text="Send Message", command=send_message, bg="#818b8f", fg="white", font=("Helvetica", 12, "bold"), activebackground="#218838", activeforeground="white", borderwidth=0, padx=10, pady=5)
-send_button.pack(pady=10)
-
-# Log Tab
-log_frame = tk.Frame(notebook)
-notebook.add(log_frame, text="Logs")
-
-log_text = tk.Text(log_frame, height=10, width=50)
-log_text.pack(expand=True, fill="both", padx=10, pady=10)
-
-# API keys replace with your actual keys
-# Twitter (X)
+# Dummy API keys for testing - replace with your actual keys
 twitter_api_key = "your_api_key"
 twitter_api_key_secret = "your_api_key_secret"
 twitter_access_token = "your_access_token"
 twitter_access_token_secret = "your_access_token_secret"
-# Facebook
-facebook_page_access_token = "your_facebook_page_access_token"
-facebook_page_id = "your_facebook_page_id"
-# Instagram
-instagram_user_id = "your_instagram_user_id"
-instagram_access_token = "your_instagram_access_token"
-# end
-root.mainloop()
+facebook_access_token = "your_facebook_page_access_token"  # Hier muss der Page Access Token angegeben werden
+instagram_username = "your_instagram_username"
+instagram_password = "your_instagram_password"
+
+app = QApplication(sys.argv)
+window = MainWindow()
+window.show()
+sys.exit(app.exec())
