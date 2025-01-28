@@ -47,5 +47,5 @@ Add your API credentials:
 **[Volkan Kücükbudak](https://github.com/volkansah)**
 
 ## License
- MIT
+GPL3
 
