@@ -1,7 +1,7 @@
 # Social Media Poster GUI 
 #### (Social Media Manager Pro)
 
-A cross-platform desktop application for posting to multiple social networks with API integration.
+A cross-platform desktop application for posting to multiple social networks with API integration. You can extend it very easy ☑️
 
 ## Features
 
