@@ -3,177 +3,224 @@ import facebook
 from instabot import Bot
 from PySide6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
-    QTextEdit, QPushButton, QFileDialog, QLineEdit, QCheckBox, QLabel, QTabWidget
+    QTextEdit, QPushButton, QFileDialog, QLineEdit, QCheckBox, QLabel, QTabWidget, QMessageBox
 )
-from PySide6.QtGui import QAction, QIcon
+from PySide6.QtGui import QAction
 import sys
-    # Twitter post logic
 
-# Funktionen unverändert übernommen
-def post_to_twitter(api_key, api_key_secret, access_token, access_token_secret, message, image_path=None):
-    # Authentifizierung mit Twitter API
-    auth = tweepy.OAuthHandler(api_key, api_key_secret)
-    auth.set_access_token(access_token, access_token_secret)
-    api = tweepy.API(auth)
-
-    try:
-        if image_path:
-            # Post mit Bild
-            media = api.media_upload(image_path)
-            api.update_status(status=message, media_ids=[media.media_id])
-        else:
-            # Post ohne Bild
-            api.update_status(status=message)
-        return "Erfolgreich auf Twitter gepostet"
-    except Exception as e:
-        return f"Fehler beim Posten auf Twitter: {str(e)}"
-        
-    # log_text.append("Posted to Twitter\n")
-    # Facebook post logic
-
-def post_to_facebook(access_token, message, image_path=None):
-    graph = facebook.GraphAPI(access_token)
-    try:
-        if image_path:
-            # Post mit Bild
-            with open(image_path, "rb") as image:
-                graph.put_photo(image=image, message=message)
-        else:
-            # Post ohne Bild
-            graph.put_object("me", "feed", message=message)
-        return "Erfolgreich auf Facebook gepostet"
-    except facebook.GraphAPIError as e:
-        return f"Fehler beim Posten auf Facebook: {str(e)}"
-    # log_text.append("Posted to Facebook\n")
-    # Instagram post logic
-
-def post_to_instagram(username, password, message, image_path):
-    from instabot import Bot
-    bot = Bot()
-    try:
-        bot.login(username=username, password=password)
-        if image_path:
-            # Instagram erfordert ein Bild für Posts
-            bot.upload_photo(image_path, caption=message)
-            return "Erfolgreich auf Instagram gepostet"
-        else:
-            return "Fehler: Instagram erfordert ein Bild für Posts"
-    except Exception as e:
-        return f"Fehler beim Posten auf Instagram: {str(e)}"
-
-def send_message():
-    message = self.message_entry.toPlainText().strip()
-    image_path = self.image_entry.text()
-
-    if len(message) > 280:
-        self.log_text.append("Fehler: Nachricht zu lang für Twitter (max 280 Zeichen)")
-        return
-
-    if self.twitter_var.isChecked():
-        result = post_to_twitter(twitter_api_key, twitter_api_key_secret, twitter_access_token, twitter_access_token_secret, message, image_path)
-        self.log_text.append(result)
-
-    if self.facebook_var.isChecked():
-        result = post_to_facebook(facebook_access_token, message, image_path)
-        self.log_text.append(result)
-
-    if self.instagram_var.isChecked():
-        result = post_to_instagram(instagram_username, instagram_password, message, image_path)
-        self.log_text.append(result)
-        
-def select_image():
-    file_path, _ = QFileDialog.getOpenFileName()
-    if file_path:
-        image_entry.setText(file_path)
-
-def show_about():
-    # Display an about message
-    pass
-
-# Dummy API keys for testing - replace with your actual keys
-twitter_api_key = "your_api_key"
-twitter_api_key_secret = "your_api_key_secret"
-twitter_access_token = "your_access_token"
-twitter_access_token_secret = "your_access_token_secret"
-facebook_access_token = "your_facebook_access_token"
-
-# GUI-Design mit PySide6
-class MainWindow(QMainWindow):
+class SocialMediaManager(QMainWindow):
     def __init__(self):
         super().__init__()
-
-        self.setWindowTitle("Social Network Poster")
-
-        # Menüleiste
-        menu_bar = self.menuBar()
-        file_menu = menu_bar.addMenu("File")
-        about_action = QAction("About", self)
-        about_action.triggered.connect(show_about)
-        file_menu.addAction(about_action)
-        file_menu.addSeparator()
-        exit_action = QAction("Exit", self)
-        exit_action.triggered.connect(self.close)
-        file_menu.addAction(exit_action)
-
-        # Hauptlayout
-        main_layout = QHBoxLayout()
-
-        # Linkes Widget für Netzwerkeinstellungen
-        left_widget = QWidget()
-        left_layout = QVBoxLayout()
-        left_widget.setLayout(left_layout)
-
-        left_layout.addWidget(QLabel("Netzwerke:"))
+        self.setWindowTitle("Social Media Manager Pro")
+        self.setMinimumSize(800, 600)
         
-        self.twitter_var = QCheckBox("Twitter")
-        self.facebook_var = QCheckBox("Facebook")
-        self.instagram_var = QCheckBox("Instagram")  # Placeholder for future Instagram integration
-        left_layout.addWidget(self.twitter_var)
-        left_layout.addWidget(self.facebook_var)
-        left_layout.addWidget(self.instagram_var)
+        # Initialisiere UI-Komponenten
+        self.init_ui()
+        self.init_credentials()
         
-        main_layout.addWidget(left_widget)
-
-        # Rechtes Widget für Nachrichteneingabe und Bildauswahl
-        right_widget = QWidget()
-        right_layout = QVBoxLayout()
-        right_widget.setLayout(right_layout)
-
+    def init_ui(self):
+        # Haupt-Tab-Widget
+        tab_widget = QTabWidget()
+        
+        # Haupt-Post-Tab
+        main_tab = QWidget()
+        layout = QVBoxLayout()
+        
+        # Nachrichteneingabe
         self.message_entry = QTextEdit()
         self.message_entry.setPlaceholderText("Enter your message here...")
-        right_layout.addWidget(self.message_entry)
-
+        layout.addWidget(QLabel("Message:"))
+        layout.addWidget(self.message_entry)
+        
+        # Bildauswahl
         self.image_entry = QLineEdit()
-        image_button = QPushButton("Browse")
-        image_button.clicked.connect(select_image)
-
+        image_btn = QPushButton("Select Image")
+        image_btn.clicked.connect(self.select_image)
         image_layout = QHBoxLayout()
         image_layout.addWidget(self.image_entry)
-        image_layout.addWidget(image_button)
-
-        right_layout.addLayout(image_layout)
-
-        send_button = QPushButton("Send Message")
-        send_button.clicked.connect(send_message)
-        right_layout.addWidget(send_button)
-
-        main_layout.addWidget(right_widget)
-
-        # Hauptwidget setzen
-        main_widget = QWidget()
-        main_widget.setLayout(main_layout)
-        self.setCentralWidget(main_widget)
-
+        image_layout.addWidget(image_btn)
+        layout.addLayout(image_layout)
+        
+        # Netzwerkauswahl
+        self.network_checks = {
+            'twitter': QCheckBox("Twitter"),
+            'facebook': QCheckBox("Facebook"),
+            'instagram': QCheckBox("Instagram")
+        }
+        network_group = QVBoxLayout()
+        network_group.addWidget(QLabel("Select Networks:"))
+        for check in self.network_checks.values():
+            network_group.addWidget(check)
+        layout.addLayout(network_group)
+        
+        # Post-Button
+        post_btn = QPushButton("Post to Selected Networks")
+        post_btn.clicked.connect(self.post_message)
+        layout.addWidget(post_btn)
+        
+        main_tab.setLayout(layout)
+        
         # Log-Tab
         self.log_text = QTextEdit()
         self.log_text.setReadOnly(True)
-
-        tab_widget = QTabWidget()
-        tab_widget.addTab(main_widget, "Main")
+        
+        # Credential-Tab
+        credential_tab = self.create_credential_tab()
+        
+        tab_widget.addTab(main_tab, "Post")
+        tab_widget.addTab(credential_tab, "Credentials")
         tab_widget.addTab(self.log_text, "Logs")
+        
         self.setCentralWidget(tab_widget)
+        
+    def create_credential_tab(self):
+        tab = QWidget()
+        layout = QVBoxLayout()
+        
+        # Twitter Credentials
+        twitter_group = QVBoxLayout()
+        twitter_group.addWidget(QLabel("Twitter Credentials:"))
+        self.twitter_api_key = QLineEdit()
+        self.twitter_api_secret = QLineEdit()
+        self.twitter_access_token = QLineEdit()
+        self.twitter_token_secret = QLineEdit()
+        twitter_group.addWidget(QLabel("API Key:"))
+        twitter_group.addWidget(self.twitter_api_key)
+        twitter_group.addWidget(QLabel("API Secret:"))
+        twitter_group.addWidget(self.twitter_api_secret)
+        twitter_group.addWidget(QLabel("Access Token:"))
+        twitter_group.addWidget(self.twitter_access_token)
+        twitter_group.addWidget(QLabel("Token Secret:"))
+        twitter_group.addWidget(self.twitter_token_secret)
+        
+        # Facebook Credentials
+        facebook_group = QVBoxLayout()
+        facebook_group.addWidget(QLabel("Facebook Access Token:"))
+        self.facebook_token = QLineEdit()
+        facebook_group.addWidget(self.facebook_token)
+        
+        # Instagram Credentials
+        instagram_group = QVBoxLayout()
+        instagram_group.addWidget(QLabel("Instagram Credentials:"))
+        self.instagram_user = QLineEdit()
+        self.instagram_pass = QLineEdit()
+        self.instagram_pass.setEchoMode(QLineEdit.Password)
+        instagram_group.addWidget(QLabel("Username:"))
+        instagram_group.addWidget(self.instagram_user)
+        instagram_group.addWidget(QLabel("Password:"))
+        instagram_group.addWidget(self.instagram_pass)
+        
+        layout.addLayout(twitter_group)
+        layout.addLayout(facebook_group)
+        layout.addLayout(instagram_group)
+        layout.addStretch()
+        
+        tab.setLayout(layout)
+        return tab
+        
+    def init_credentials(self):
+        # Hier könnten gespeicherte Credentials geladen werden
+        pass
+        
+    def select_image(self):
+        file_path, _ = QFileDialog.getOpenFileName(
+            self, "Select Image", "", "Image Files (*.png *.jpg *.jpeg)"
+        )
+        if file_path:
+            self.image_entry.setText(file_path)
+            
+    def validate_inputs(self):
+        message = self.message_entry.toPlainText().strip()
+        if not message:
+            QMessageBox.warning(self, "Warning", "Message cannot be empty!")
+            return False
+            
+        selected = any(check.isChecked() for check in self.network_checks.values())
+        if not selected:
+            QMessageBox.warning(self, "Warning", "Select at least one network!")
+            return False
+            
+        return True
+        
+    def post_message(self):
+        if not self.validate_inputs():
+            return
+            
+        message = self.message_entry.toPlainText().strip()
+        image_path = self.image_entry.text() or None
+        
+        if self.network_checks['twitter'].isChecked():
+            self.post_to_twitter(message, image_path)
+            
+        if self.network_checks['facebook'].isChecked():
+            self.post_to_facebook(message, image_path)
+            
+        if self.network_checks['instagram'].isChecked():
+            self.post_to_instagram(message, image_path)
+            
+    def post_to_twitter(self, message, image_path):
+        if len(message) > 280:
+            self.log(f"Twitter Error: Message exceeds 280 characters ({len(message)})")
+            return
+            
+        try:
+            auth = tweepy.OAuthHandler(
+                self.twitter_api_key.text(),
+                self.twitter_api_secret.text()
+            )
+            auth.set_access_token(
+                self.twitter_access_token.text(),
+                self.twitter_token_secret.text()
+            )
+            api = tweepy.API(auth)
+            
+            if image_path:
+                media = api.media_upload(image_path)
+                api.update_status(status=message, media_ids=[media.media_id])
+            else:
+                api.update_status(status=message)
+                
+            self.log("Successfully posted to Twitter")
+        except Exception as e:
+            self.log(f"Twitter Error: {str(e)}")
+            
+    def post_to_facebook(self, message, image_path):
+        try:
+            graph = facebook.GraphAPI(self.facebook_token.text())
+            if image_path:
+                with open(image_path, "rb") as image:
+                    graph.put_photo(image=image, message=message)
+            else:
+                graph.put_object("me", "feed", message=message)
+            self.log("Successfully posted to Facebook")
+        except Exception as e:
+            self.log(f"Facebook Error: {str(e)}")
+            
+    def post_to_instagram(self, message, image_path):
+        if not image_path:
+            self.log("Instagram Error: Image required for posting")
+            return
+            
+        try:
+            bot = Bot()
+            bot.login(
+                username=self.instagram_user.text(),
+                password=self.instagram_pass.text()
+            )
+            bot.upload_photo(image_path, caption=message)
+            self.log("Successfully posted to Instagram")
+        except Exception as e:
+            self.log(f"Instagram Error: {str(e)}")
+            
+    def log(self, message):
+        self.log_text.append(f"[{datetime.now().strftime('%H:%M:%S')}] {message}")
+        
+    def closeEvent(self, event):
+        # Hier könnten Credentials gespeichert werden
+        event.accept()
 
-app = QApplication(sys.argv)
-window = MainWindow()
-window.show()
-sys.exit(app.exec())
+if __name__ == "__main__":
+    app = QApplication(sys.argv)
+    window = SocialMediaManager()
+    window.show()
+    sys.exit(app.exec())
