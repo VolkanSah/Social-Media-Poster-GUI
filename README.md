@@ -1,24 +1,44 @@
-# Social Media Post Tool
+# Social Media Poster GUI
 
+A cross-platform desktop application for posting to multiple social networks with API integration.
 
-Um das Programm zu verwenden:
+## Features
 
-    In den Credentials-Tab die jeweiligen API-Keys und Zugangsdaten eintragen
+- 📱 Post to Twitter, Facebook, Instagram
+- 🖼️ Image attachment support
+- 📝 Message drafting with character counter
+- 🔐 Secure credential storage
+- 📋 Activity logging
 
-    Im Post-Tab die Nachricht verfassen und optional ein Bild auswählen
+## Installation
 
-    Gewünschte Netzwerke auswählen
+```bash
+pip install tweepy facebook-sdk instabot PySide6
+```
 
-    Auf "Post to Selected Networks" klicken
+## Usage
 
-    Ergebnisse werden im Log-Tab angezeigt
+1. Enter API credentials in Settings tab
+2. Compose message (280 chars max for Twitter)
+3. Select image (optional, required for Instagram)
+4. Choose platforms
+5. Click "Post"
 
-Beachten Sie:
+## Configuration
 
-    Für die Nutzung benötigen Sie gültige API-Zugangsdaten
+Add your API credentials:
+- Twitter: API Key/Secret, Access Token/Secret
+- Facebook: Access Token
+- Instagram: Username/Password
 
-    Instagram-Posts erfordern immer ein Bild
+## Notes
 
-    Twitter hat ein 280-Zeichen-Limit
+- Requires valid API keys from each platform
+- Test with dummy accounts first
+- Instagram posts require an image
 
-    Facebook-Posts können ohne Bild erstellt werden
+### Screenshot
+![1](1-sm.jpg)
+
+![1](2-sm.jpg)
+
