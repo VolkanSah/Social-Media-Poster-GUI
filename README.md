@@ -43,3 +43,9 @@ Add your API credentials:
 
 ![1](2-sm.jpg)
 
+## Copyright
+**[Volkan Kücükbudak](https://github.com/volkansah)**
+
+## License
+ MIT
+
